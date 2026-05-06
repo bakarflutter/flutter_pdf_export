@@ -4,7 +4,7 @@ description: >
   multi-script font resolution. Supports Arabic, Hebrew, CJK, Devanagari, and
   15+ other scripts out of the box. Returns a File you can save, share, or open
   with any picker.
-version: 1.0.3
+version: 1.0.4
 homepage: https://github.com/bakarflutter/flutter_pdf_export
 repository: https://github.com/bakarflutter/flutter_pdf_export
 
