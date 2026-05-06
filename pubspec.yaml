@@ -6,6 +6,7 @@ description: >
   with any picker.
 version: 1.0.0
 homepage: https://github.com/bakarflutter/flutter_pdf_export
+repository: https://github.com/bakarflutter/flutter_pdf_export
 
 environment:
   sdk: ^3.11.5
