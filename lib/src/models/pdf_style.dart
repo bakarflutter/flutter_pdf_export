@@ -1,5 +1,11 @@
 import 'package:pdf/pdf.dart';
 
+/// Shape of the bullet point markers.
+enum BulletShape { circle, square, dash, tick }
+
+/// Alignment for document headings.
+enum PdfHeadingAlignment { left, center, right }
+
 /// Controls every visual aspect of the generated PDF.
 ///
 /// All fields have sensible defaults so you can start with `PdfStyle()` and
@@ -35,6 +41,9 @@ class PdfStyle {
 
   /// Page background color (default: white).
   final PdfColor backgroundColor;
+
+  /// Whether to use a gradient-like header background (simulated).
+  final bool useHeaderGradient;
 
   // ── Typography ───────────────────────────────────────────────────────────
 
@@ -90,17 +99,30 @@ class PdfStyle {
   /// Bullet dot size in points.
   final double bulletDotSize;
 
+  /// Shape of the bullet points.
+  final BulletShape bulletShape;
+
+  /// Alignment for headings (H1, H2, H3).
+  final PdfHeadingAlignment headingAlignment;
+
+  /// Whether to show a logo in the header (requires logoBytes in PdfDocumentData).
+  final bool showLogo;
+
+  /// Size of the logo in points.
+  final double logoSize;
+
   const PdfStyle({
     this.pageFormat = PdfPageFormat.a4,
     this.horizontalMargin = 48,
     this.verticalMargin = 52,
-    this.accentColor = const PdfColor.fromInt(0xFFE91E63),
+    this.accentColor = const PdfColor.fromInt(0xFF1565C0), // More premium blue
     this.textColor = const PdfColor.fromInt(0xFF212121),
-    this.subtitleColor = const PdfColor.fromInt(0xFF5C5C5C),
+    this.subtitleColor = const PdfColor.fromInt(0xFF616161),
     this.dividerColor = const PdfColor.fromInt(0xFFE0E0E0),
     this.footerColor = const PdfColor.fromInt(0xFF9E9E9E),
     this.backgroundColor = PdfColors.white,
-    this.h1FontSize = 22,
+    this.useHeaderGradient = false,
+    this.h1FontSize = 24,
     this.h2FontSize = 20,
     this.h3FontSize = 16,
     this.bodyFontSize = 13,
@@ -108,14 +130,18 @@ class PdfStyle {
     this.bodyLineHeight = 1.6,
     this.bulletLineHeight = 1.4,
     this.showHeaderBar = true,
-    this.headerBarHeight = 4,
-    this.showHeaderTitle = false,
+    this.headerBarHeight = 3,
+    this.showHeaderTitle = true,
     this.showPageNumbers = true,
     this.footerLeftText,
-    this.paragraphSpacing = 6,
-    this.headingTopPadding = 12,
-    this.bulletIndentPerLevel = 12,
+    this.paragraphSpacing = 8,
+    this.headingTopPadding = 16,
+    this.bulletIndentPerLevel = 16,
     this.bulletDotSize = 4,
+    this.bulletShape = BulletShape.circle,
+    this.headingAlignment = PdfHeadingAlignment.left,
+    this.showLogo = false,
+    this.logoSize = 40,
   });
 
   /// Creates a copy of this style with the given fields replaced.
@@ -145,6 +171,11 @@ class PdfStyle {
     double? headingTopPadding,
     double? bulletIndentPerLevel,
     double? bulletDotSize,
+    BulletShape? bulletShape,
+    PdfHeadingAlignment? headingAlignment,
+    bool? showLogo,
+    double? logoSize,
+    bool? useHeaderGradient,
   }) {
     return PdfStyle(
       pageFormat: pageFormat ?? this.pageFormat,
@@ -156,6 +187,7 @@ class PdfStyle {
       dividerColor: dividerColor ?? this.dividerColor,
       footerColor: footerColor ?? this.footerColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
+      useHeaderGradient: useHeaderGradient ?? this.useHeaderGradient,
       h1FontSize: h1FontSize ?? this.h1FontSize,
       h2FontSize: h2FontSize ?? this.h2FontSize,
       h3FontSize: h3FontSize ?? this.h3FontSize,
@@ -172,6 +204,10 @@ class PdfStyle {
       headingTopPadding: headingTopPadding ?? this.headingTopPadding,
       bulletIndentPerLevel: bulletIndentPerLevel ?? this.bulletIndentPerLevel,
       bulletDotSize: bulletDotSize ?? this.bulletDotSize,
+      bulletShape: bulletShape ?? this.bulletShape,
+      headingAlignment: headingAlignment ?? this.headingAlignment,
+      showLogo: showLogo ?? this.showLogo,
+      logoSize: logoSize ?? this.logoSize,
     );
   }
 

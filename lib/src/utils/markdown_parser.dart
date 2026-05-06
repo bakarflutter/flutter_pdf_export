@@ -45,10 +45,22 @@ class MarkdownParser {
       }
 
       // Bullet list items — supports indented nesting via leading spaces
-      final bulletMatch = RegExp(r'^(\s*)([-•*]|\d+\.)\s+(.+)$').firstMatch(line);
+      // Catching: -, •, *, +, and numbered lists like 1.
+      final bulletMatch =
+          RegExp(r'^(\s*)([-•*+]|\d+\.)\s+(.+)$').firstMatch(line);
       if (bulletMatch != null) {
         final indent = bulletMatch.group(1)!.length;
         final text = bulletMatch.group(3)!;
+        sections.add(PdfSection.bullet(text, level: indent ~/ 2));
+        continue;
+      }
+
+      // Heuristic for "dirty" bullets that might have missed the regex
+      // e.g. "*No space after star" or "-Item"
+      final dirtyBulletMatch = RegExp(r'^(\s*)([-•*+])([^\s].*)$').firstMatch(line);
+      if (dirtyBulletMatch != null) {
+        final indent = dirtyBulletMatch.group(1)!.length;
+        final text = dirtyBulletMatch.group(3)!;
         sections.add(PdfSection.bullet(text, level: indent ~/ 2));
         continue;
       }

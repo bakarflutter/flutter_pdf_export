@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'pdf_section.dart';
 import 'pdf_style.dart';
 
@@ -26,6 +28,9 @@ class PdfDocumentData {
   /// Supports: `# H1`, `## H2`, `### H3`, `**bold**`, `- bullet`, `• bullet`.
   final String? markdownBody;
 
+  /// Optional logo bytes to show in the header.
+  final Uint8List? logoBytes;
+
   /// Visual style for this document. Defaults to [PdfStyle()].
   final PdfStyle style;
 
@@ -39,6 +44,7 @@ class PdfDocumentData {
     this.author,
     this.sections = const [],
     this.markdownBody,
+    this.logoBytes,
     this.style = const PdfStyle(),
     this.outputFileName,
   }) : assert(
@@ -52,6 +58,7 @@ class PdfDocumentData {
     required String markdown,
     String? subtitle,
     String? author,
+    Uint8List? logoBytes,
     PdfStyle style = const PdfStyle(),
     String? outputFileName,
   }) {
@@ -60,6 +67,7 @@ class PdfDocumentData {
       subtitle: subtitle,
       author: author,
       markdownBody: markdown,
+      logoBytes: logoBytes,
       style: style,
       outputFileName: outputFileName,
     );

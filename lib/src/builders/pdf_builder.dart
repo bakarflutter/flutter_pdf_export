@@ -128,7 +128,7 @@ class PdfBuilder {
     required pw.Font baseFont,
     required pw.Font baseBoldFont,
   }) {
-    if (!style.showHeaderBar && !style.showHeaderTitle) {
+    if (!style.showHeaderBar && !style.showHeaderTitle && !style.showLogo) {
       return pw.SizedBox.shrink();
     }
 
@@ -137,27 +137,45 @@ class PdfBuilder {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // if (style.showHeaderBar)
-        //   pw.Container(
-        //     height: style.headerBarHeight,
-        //     decoration: pw.BoxDecoration(color: style.accentColor),
-        //   ),
-        // if (style.showHeaderBar) pw.SizedBox(height: 10),
-        if (style.showHeaderTitle)
-          pw.Text(
-            data.title,
-            textDirection: titleRtl
-                ? pw.TextDirection.rtl
-                : pw.TextDirection.ltr,
-            style: pw.TextStyle(
-              font: baseBoldFont,
-              fontSize: style.h2FontSize,
-              color: style.textColor,
+        if (style.showHeaderBar)
+          pw.Container(
+            height: style.headerBarHeight,
+            width: double.infinity,
+            decoration: pw.BoxDecoration(
+              color: style.accentColor,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(2)),
             ),
           ),
-        if (style.showHeaderTitle) pw.SizedBox(height: 4),
+        if (style.showHeaderBar) pw.SizedBox(height: 12),
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            if (style.showLogo && data.logoBytes != null)
+              pw.Image(
+                pw.MemoryImage(data.logoBytes!),
+                height: style.logoSize,
+                width: style.logoSize,
+              ),
+            if (style.showHeaderTitle)
+              pw.Expanded(
+                child: pw.Text(
+                  data.title,
+                  textDirection:
+                      titleRtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+                  textAlign: titleRtl ? pw.TextAlign.right : pw.TextAlign.left,
+                  style: pw.TextStyle(
+                    font: baseBoldFont,
+                    fontSize: style.h2FontSize,
+                    color: style.textColor,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        if (style.showHeaderTitle || style.showLogo) pw.SizedBox(height: 8),
         pw.Divider(color: style.dividerColor, thickness: 0.5),
-        pw.SizedBox(height: 6),
+        pw.SizedBox(height: 8),
       ],
     );
   }
@@ -393,14 +411,30 @@ class PdfBuilder {
     final font = _font(text, boldMap, fontMap.values.first);
     final rtl = RtlUtils.isRtl(text);
 
+    pw.Alignment alignment;
+    switch (style.headingAlignment) {
+      case PdfHeadingAlignment.center:
+        alignment = pw.Alignment.center;
+        break;
+      case PdfHeadingAlignment.right:
+        alignment = pw.Alignment.centerRight;
+        break;
+      case PdfHeadingAlignment.left:
+        alignment = rtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft;
+    }
+
     return [
       pw.SizedBox(height: style.headingTopPadding),
       pw.Align(
-        alignment: rtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft,
+        alignment: alignment,
         child: pw.Text(
           text,
           textDirection: rtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
-          textAlign: rtl ? pw.TextAlign.right : pw.TextAlign.left,
+          textAlign: alignment == pw.Alignment.center
+              ? pw.TextAlign.center
+              : (alignment == pw.Alignment.centerRight
+                  ? pw.TextAlign.right
+                  : pw.TextAlign.left),
           style: pw.TextStyle(
             font: font,
             fontSize: size,
@@ -409,7 +443,7 @@ class PdfBuilder {
           ),
         ),
       ),
-      pw.SizedBox(height: 4),
+      pw.SizedBox(height: 6),
     ];
   }
 
@@ -418,23 +452,57 @@ class PdfBuilder {
     required PdfStyle style,
     required bool rtl,
   }) {
-    final dot = pw.Padding(
-      padding: const pw.EdgeInsets.only(top: 5),
-      child: pw.Container(
-        width: style.bulletDotSize,
-        height: style.bulletDotSize,
-        decoration: pw.BoxDecoration(
-          color: style.textColor,
-          shape: pw.BoxShape.circle,
-        ),
-      ),
+    pw.Widget marker;
+
+    switch (style.bulletShape) {
+      case BulletShape.square:
+        marker = pw.Container(
+          width: style.bulletDotSize,
+          height: style.bulletDotSize,
+          decoration: pw.BoxDecoration(
+            color: style.accentColor,
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(1)),
+          ),
+        );
+        break;
+      case BulletShape.dash:
+        marker = pw.Container(
+          width: style.bulletDotSize * 1.5,
+          height: 1.5,
+          color: style.accentColor,
+        );
+        break;
+      case BulletShape.tick:
+        marker = pw.Text(
+          '✓',
+          style: pw.TextStyle(
+            color: style.accentColor,
+            fontSize: style.bodyFontSize,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        );
+        break;
+      case BulletShape.circle:
+        marker = pw.Container(
+          width: style.bulletDotSize,
+          height: style.bulletDotSize,
+          decoration: pw.BoxDecoration(
+            color: style.accentColor,
+            shape: pw.BoxShape.circle,
+          ),
+        );
+    }
+
+    final bulletMarker = pw.Padding(
+      padding: pw.EdgeInsets.only(top: style.bulletShape == BulletShape.tick ? 0 : 6),
+      child: marker,
     );
 
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: rtl
-          ? [pw.Expanded(child: child), pw.SizedBox(width: 6), dot]
-          : [dot, pw.SizedBox(width: 6), pw.Expanded(child: child)],
+          ? [pw.Expanded(child: child), pw.SizedBox(width: 8), bulletMarker]
+          : [bulletMarker, pw.SizedBox(width: 8), pw.Expanded(child: child)],
     );
   }
 

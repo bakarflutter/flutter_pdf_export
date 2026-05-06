@@ -3,10 +3,12 @@
 - 🌍 **21 scripts supported** — Arabic, Urdu, Hebrew, Hindi, Bengali, Gujarati, Tamil, Telugu, Kannada, Malayalam, Sinhala, Thai, Lao, Myanmar, Khmer, Ethiopic, Georgian, Armenian, Korean, Chinese, Latin
 - 🔤 **Font auto-detection** — resolved per paragraph, not per document
 - ↔️ **RTL auto-detection** — Arabic and Hebrew paragraphs are right-aligned automatically
-- 🖼 **Image embedding** — PNG / JPEG bytes with caption, width fraction, and alignment control
+- 🖼 **Image & Logo support** — embed images and brand your document with a logo
+- 🎯 **Proper Decoration** — clean bullet starts, multiple bullet shapes (Circle, Square, Dash, Tick), and alignment control
+- ⚡ **Simplified API** — generate PDFs directly from `String` or `PdfDocumentData`
 - **`**bold**`** **inline formatting** — works in paragraphs and bullets
-- 📝 **Markdown parser** — `# H1`, `## H2`, `**bold**`, `- bullets`, `---` dividers
-- 🎨 **Fully customisable style** — colors, font sizes, margins, header bar, footer text, page format
+- 📝 **Enhanced Markdown parser** — cleaner detection of bullets even with "dirty" input
+- 🎨 **Premium Styling** — colors, font sizes, margins, header bars, footer text, page formats
 - 📦 **4 preset styles** — `PdfStyle.light`, `.dark`, `.minimal`, `.warm`
 - 💾 **Disk font cache** — downloaded once, persisted between sessions
 - 📄 **Returns `dart:io File`** — integrate with `share_plus`, `open_file`, `file_saver`, or any package
@@ -30,16 +32,32 @@ flutter pub get
 
 ---
 
-## Quick Start
-
-### From Markdown
+### Simplified Usage (via Extensions)
 
 ```dart
 import 'package:flutter_pdf_export/flutter_pdf_export.dart';
 
+// Convert any markdown string directly to a PDF File
+final file = await """
+# My Report
+This is a **totally clean** PDF with a simple API.
+
+- Proper bullets
+- Custom decoration
+- Premium feel
+""".toPdfFile(
+  title: 'My Document',
+  style: PdfStyle.light,
+);
+```
+
+### Advanced Usage (from Markdown)
+
+```dart
 final file = await PdfBuilder.generate(
   PdfDocumentData.fromMarkdown(
     title: 'My Report',
+    logoBytes: myLogoBytes, // Add your logo!
     markdown: '''
 # Introduction
 This is **bold** and this is normal.
@@ -53,11 +71,6 @@ This is **bold** and this is normal.
 ''',
   ),
 );
-
-// file is a dart:io File — do what you want with it:
-// share_plus  → Share.shareXFiles([XFile(file.path)])
-// open_file   → OpenFile.open(file.path)
-// file_saver  → FileSaver.instance.saveFile(...)
 ```
 
 ### From Structured Sections
@@ -181,28 +194,30 @@ style: const PdfStyle(
 
 ---
 
-## PdfStyle Properties
-
-| Property               | Type            | Default    | Description                        |
-| ---------------------- | --------------- | ---------- | ---------------------------------- |
-| `pageFormat`           | `PdfPageFormat` | A4         | Page size                          |
-| `horizontalMargin`     | `double`        | 48         | Left/right margin in points        |
-| `verticalMargin`       | `double`        | 52         | Top/bottom margin in points        |
-| `accentColor`          | `PdfColor`      | Pink       | H1 heading + header bar color      |
-| `textColor`            | `PdfColor`      | Near-black | Body text and H2 color             |
-| `subtitleColor`        | `PdfColor`      | Grey       | H3 and caption color               |
-| `backgroundColor`      | `PdfColor`      | White      | Page background                    |
-| `h1FontSize`           | `double`        | 22         | H1 font size in points             |
-| `h2FontSize`           | `double`        | 20         | H2 font size in points             |
-| `h3FontSize`           | `double`        | 16         | H3 font size in points             |
-| `bodyFontSize`         | `double`        | 13         | Paragraph and bullet font size     |
-| `bodyLineHeight`       | `double`        | 1.6        | Line height multiplier             |
-| `showHeaderBar`        | `bool`          | true       | Accent bar at top of each page     |
-| `headerBarHeight`      | `double`        | 4          | Bar height in points               |
-| `showHeaderTitle`      | `bool`          | false      | Show document title in header      |
-| `showPageNumbers`      | `bool`          | true       | Page N / Total in footer           |
-| `footerLeftText`       | `String?`       | null       | Left footer text (e.g. app name)   |
-| `bulletIndentPerLevel` | `double`        | 12         | Points of indent per nesting level |
+| Property               | Type                   | Default    | Description                        |
+| ---------------------- | ---------------------- | ---------- | ---------------------------------- |
+| `pageFormat`           | `PdfPageFormat`        | A4         | Page size                          |
+| `horizontalMargin`     | `double`               | 48         | Left/right margin in points        |
+| `verticalMargin`       | `double`               | 52         | Top/bottom margin in points        |
+| `accentColor`          | `PdfColor`             | Blue       | H1 heading + header bar + bullets  |
+| `textColor`            | `PdfColor`             | Near-black | Body text and H2 color             |
+| `subtitleColor`        | `PdfColor`             | Grey       | H3 and caption color               |
+| `backgroundColor`      | `PdfColor`             | White      | Page background                    |
+| `h1FontSize`           | `double`               | 24         | H1 font size in points             |
+| `h2FontSize`           | `double`               | 20         | H2 font size in points             |
+| `h3FontSize`           | `double`               | 16         | H3 font size in points             |
+| `bodyFontSize`         | `double`               | 13         | Paragraph and bullet font size     |
+| `bodyLineHeight`       | `double`               | 1.6        | Line height multiplier             |
+| `showHeaderBar`        | `bool`                 | true       | Accent bar at top of each page     |
+| `headerBarHeight`      | `double`               | 3          | Bar height in points               |
+| `showHeaderTitle`      | `bool`                 | true       | Show document title in header      |
+| `showLogo`             | `bool`                 | false      | Enable logo in header              |
+| `logoSize`             | `double`               | 40         | Logo height/width                  |
+| `headingAlignment`     | `PdfHeadingAlignment`  | Left/Auto  | Left, Center, or Right             |
+| `bulletShape`          | `BulletShape`          | Circle     | Circle, Square, Dash, or Tick      |
+| `showPageNumbers`      | `bool`                 | true       | Page N / Total in footer           |
+| `footerLeftText`       | `String?`              | null       | Left footer text (e.g. app name)   |
+| `bulletIndentPerLevel` | `double`               | 16         | Points of indent per nesting level |
 
 ---
 
