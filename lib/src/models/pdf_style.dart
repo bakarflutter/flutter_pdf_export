@@ -3,8 +3,8 @@ import 'package:pdf/pdf.dart';
 /// Shape of the bullet point markers.
 enum BulletShape { circle, square, dash, tick }
 
-/// Alignment for document headings.
-enum PdfHeadingAlignment { left, center, right }
+/// Alignment for text in the document.
+enum PdfTextAlign { left, center, right, justify }
 
 /// Controls every visual aspect of the generated PDF.
 ///
@@ -38,6 +38,9 @@ class PdfStyle {
 
   /// Footer text color.
   final PdfColor footerColor;
+
+  /// Bullet marker color.
+  final PdfColor bulletColor;
 
   /// Page background color (default: white).
   final PdfColor backgroundColor;
@@ -103,7 +106,10 @@ class PdfStyle {
   final BulletShape bulletShape;
 
   /// Alignment for headings (H1, H2, H3).
-  final PdfHeadingAlignment headingAlignment;
+  final PdfTextAlign headingAlignment;
+
+  /// Alignment for body text paragraphs.
+  final PdfTextAlign paragraphAlignment;
 
   /// Whether to show a logo in the header (requires logoBytes in PdfDocumentData).
   final bool showLogo;
@@ -120,6 +126,7 @@ class PdfStyle {
     this.subtitleColor = const PdfColor.fromInt(0xFF616161),
     this.dividerColor = const PdfColor.fromInt(0xFFE0E0E0),
     this.footerColor = const PdfColor.fromInt(0xFF9E9E9E),
+    this.bulletColor = const PdfColor.fromInt(0xFF212121),
     this.backgroundColor = PdfColors.white,
     this.useHeaderGradient = false,
     this.h1FontSize = 24,
@@ -134,12 +141,13 @@ class PdfStyle {
     this.showHeaderTitle = true,
     this.showPageNumbers = true,
     this.footerLeftText,
-    this.paragraphSpacing = 8,
-    this.headingTopPadding = 16,
-    this.bulletIndentPerLevel = 16,
+    this.paragraphSpacing = 6,
+    this.headingTopPadding = 12,
+    this.bulletIndentPerLevel = 14,
     this.bulletDotSize = 4,
     this.bulletShape = BulletShape.circle,
-    this.headingAlignment = PdfHeadingAlignment.left,
+    this.headingAlignment = PdfTextAlign.left,
+    this.paragraphAlignment = PdfTextAlign.left,
     this.showLogo = false,
     this.logoSize = 40,
   });
@@ -154,6 +162,7 @@ class PdfStyle {
     PdfColor? subtitleColor,
     PdfColor? dividerColor,
     PdfColor? footerColor,
+    PdfColor? bulletColor,
     PdfColor? backgroundColor,
     double? h1FontSize,
     double? h2FontSize,
@@ -172,7 +181,8 @@ class PdfStyle {
     double? bulletIndentPerLevel,
     double? bulletDotSize,
     BulletShape? bulletShape,
-    PdfHeadingAlignment? headingAlignment,
+    PdfTextAlign? headingAlignment,
+    PdfTextAlign? paragraphAlignment,
     bool? showLogo,
     double? logoSize,
     bool? useHeaderGradient,
@@ -186,6 +196,7 @@ class PdfStyle {
       subtitleColor: subtitleColor ?? this.subtitleColor,
       dividerColor: dividerColor ?? this.dividerColor,
       footerColor: footerColor ?? this.footerColor,
+      bulletColor: bulletColor ?? this.bulletColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       useHeaderGradient: useHeaderGradient ?? this.useHeaderGradient,
       h1FontSize: h1FontSize ?? this.h1FontSize,
@@ -206,6 +217,7 @@ class PdfStyle {
       bulletDotSize: bulletDotSize ?? this.bulletDotSize,
       bulletShape: bulletShape ?? this.bulletShape,
       headingAlignment: headingAlignment ?? this.headingAlignment,
+      paragraphAlignment: paragraphAlignment ?? this.paragraphAlignment,
       showLogo: showLogo ?? this.showLogo,
       logoSize: logoSize ?? this.logoSize,
     );

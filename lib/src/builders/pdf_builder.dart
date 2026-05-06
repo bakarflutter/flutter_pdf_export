@@ -36,18 +36,27 @@ class PdfBuilder {
   /// you prefer (e.g. `share_plus`, `file_picker`, `open_file`, etc.).
   static Future<File> generate(PdfDocumentData data) async {
     log('[PdfBuilder] Starting generation: "${data.title}"');
+    final style = data.style;
 
-    // 1. Merge structured sections + parsed markdownBody
-    final allSections = [
-      ...data.sections,
-      if (data.markdownBody != null)
-        ...MarkdownParser.parse(data.markdownBody!),
-    ];
+    // 1. Flatten all sections (handle markdown type)
+    final allSections = <PdfSection>[];
+    for (final s in data.sections) {
+      if (s.type == PdfSectionType.markdown) {
+        allSections.addAll(MarkdownParser.parse(s.text));
+      } else {
+        allSections.add(s);
+      }
+    }
+    if (data.markdownBody != null) {
+      allSections.addAll(MarkdownParser.parse(data.markdownBody!));
+    }
 
     // 2. Collect all text strings for font preloading
-    final allTexts = [
+    final allTexts = <String>[
       data.title,
       if (data.subtitle != null) data.subtitle!,
+      if (data.author != null) data.author!,
+      if (style.footerLeftText != null) style.footerLeftText!,
       for (final s in allSections) s.text,
     ];
 
@@ -67,12 +76,11 @@ class PdfBuilder {
       }),
     );
 
-    final defaultFamily = FontResolver.familyFor(data.title);
-    final baseFont = fontMap[defaultFamily] ?? fontMap.values.first;
-    final baseBoldFont = boldMap[defaultFamily] ?? boldMap.values.first;
+    final defaultFamily = FontResolver.familyFor(data.title.isNotEmpty ? data.title : 'A');
+    final baseFont = fontMap[defaultFamily] ?? (fontMap.isNotEmpty ? fontMap.values.first : await FontResolver.resolveFamily('Noto+Sans'));
+    final baseBoldFont = boldMap[defaultFamily] ?? (boldMap.isNotEmpty ? boldMap.values.first : await FontResolver.resolveFamily('Noto+Sans', bold: true));
 
     // 5. Build the pw.Document
-    final style = data.style;
     final pdf = pw.Document(
       title: data.title,
       author: data.author ?? 'flutter_pdf_export',
@@ -304,6 +312,7 @@ class PdfBuilder {
                 color: style.textColor,
                 lineHeight: style.bodyLineHeight,
                 rtl: rtl,
+                textAlign: style.paragraphAlignment,
               ),
             )
             ..add(pw.SizedBox(height: style.paragraphSpacing));
@@ -311,9 +320,15 @@ class PdfBuilder {
 
         case PdfSectionType.bullet:
           if (section.text.trim().isEmpty) break;
-          final font = _font(section.text, fontMap, baseFont);
-          final bold = _font(section.text, boldMap, baseBoldFont);
-          final rtl = RtlUtils.isRtl(section.text);
+          
+          // Clean up text — strip leading bullet markers if they were passed manually
+          var cleanText = section.text.trim();
+          final bulletStripRegex = RegExp(r'^([-•*+]|\d+\.)\s*');
+          cleanText = cleanText.replaceFirst(bulletStripRegex, '');
+
+          final font = _font(cleanText, fontMap, baseFont);
+          final bold = _font(cleanText, boldMap, baseBoldFont);
+          final rtl = RtlUtils.isRtl(cleanText);
           final indent = section.level * style.bulletIndentPerLevel;
 
           widgets
@@ -325,13 +340,14 @@ class PdfBuilder {
                 ),
                 child: _bulletRow(
                   _richText(
-                    section.text,
+                    cleanText,
                     font: font,
                     boldFont: bold,
                     size: style.bodyFontSize,
                     color: style.textColor,
                     lineHeight: style.bulletLineHeight,
                     rtl: rtl,
+                    textAlign: style.paragraphAlignment,
                   ),
                   style: style,
                   rtl: rtl,
@@ -389,7 +405,7 @@ class PdfBuilder {
           widgets.add(pw.SizedBox(height: style.paragraphSpacing));
           break;
 
-        // markdown sections are pre-parsed before reaching here
+        // markdown sections are already flattened in generate()
         case PdfSectionType.markdown:
           break;
       }
@@ -410,18 +426,8 @@ class PdfBuilder {
   }) {
     final font = _font(text, boldMap, fontMap.values.first);
     final rtl = RtlUtils.isRtl(text);
-
-    pw.Alignment alignment;
-    switch (style.headingAlignment) {
-      case PdfHeadingAlignment.center:
-        alignment = pw.Alignment.center;
-        break;
-      case PdfHeadingAlignment.right:
-        alignment = pw.Alignment.centerRight;
-        break;
-      case PdfHeadingAlignment.left:
-        alignment = rtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft;
-    }
+    final alignment = _convertAlignment(style.headingAlignment, rtl);
+    final textAlign = _convertTextAlign(style.headingAlignment, rtl);
 
     return [
       pw.SizedBox(height: style.headingTopPadding),
@@ -430,11 +436,7 @@ class PdfBuilder {
         child: pw.Text(
           text,
           textDirection: rtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
-          textAlign: alignment == pw.Alignment.center
-              ? pw.TextAlign.center
-              : (alignment == pw.Alignment.centerRight
-                  ? pw.TextAlign.right
-                  : pw.TextAlign.left),
+          textAlign: textAlign,
           style: pw.TextStyle(
             font: font,
             fontSize: size,
@@ -460,7 +462,7 @@ class PdfBuilder {
           width: style.bulletDotSize,
           height: style.bulletDotSize,
           decoration: pw.BoxDecoration(
-            color: style.accentColor,
+            color: style.bulletColor,
             borderRadius: const pw.BorderRadius.all(pw.Radius.circular(1)),
           ),
         );
@@ -469,14 +471,14 @@ class PdfBuilder {
         marker = pw.Container(
           width: style.bulletDotSize * 1.5,
           height: 1.5,
-          color: style.accentColor,
+          color: style.bulletColor,
         );
         break;
       case BulletShape.tick:
         marker = pw.Text(
           '✓',
           style: pw.TextStyle(
-            color: style.accentColor,
+            color: style.bulletColor,
             fontSize: style.bodyFontSize,
             fontWeight: pw.FontWeight.bold,
           ),
@@ -487,7 +489,7 @@ class PdfBuilder {
           width: style.bulletDotSize,
           height: style.bulletDotSize,
           decoration: pw.BoxDecoration(
-            color: style.accentColor,
+            color: style.bulletColor,
             shape: pw.BoxShape.circle,
           ),
         );
@@ -515,6 +517,7 @@ class PdfBuilder {
     required PdfColor color,
     required double lineHeight,
     required bool rtl,
+    PdfTextAlign textAlign = PdfTextAlign.left,
   }) {
     final spans = <pw.TextSpan>[];
     final boldRegex = RegExp(r'\*\*(.+?)\*\*');
@@ -554,8 +557,34 @@ class PdfBuilder {
 
     return pw.RichText(
       textDirection: rtl ? pw.TextDirection.rtl : pw.TextDirection.ltr,
+      textAlign: _convertTextAlign(textAlign, rtl),
       text: pw.TextSpan(children: spans),
     );
+  }
+
+  static pw.TextAlign _convertTextAlign(PdfTextAlign align, bool rtl) {
+    switch (align) {
+      case PdfTextAlign.center:
+        return pw.TextAlign.center;
+      case PdfTextAlign.right:
+        return pw.TextAlign.right;
+      case PdfTextAlign.justify:
+        return pw.TextAlign.justify;
+      case PdfTextAlign.left:
+        return rtl ? pw.TextAlign.right : pw.TextAlign.left;
+    }
+  }
+
+  static pw.Alignment _convertAlignment(PdfTextAlign align, bool rtl) {
+    switch (align) {
+      case PdfTextAlign.center:
+        return pw.Alignment.center;
+      case PdfTextAlign.right:
+        return pw.Alignment.centerRight;
+      case PdfTextAlign.justify:
+      case PdfTextAlign.left:
+        return rtl ? pw.Alignment.centerRight : pw.Alignment.centerLeft;
+    }
   }
 
   static pw.Font _font(
